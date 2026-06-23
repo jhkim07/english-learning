@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { requireAdmin } from "@/lib/admin/admin-guard";
 
 const ADMIN_LINKS = [
   { href: "/admin", label: "Overview" },
@@ -13,7 +14,8 @@ const ADMIN_LINKS = [
   { href: "/admin/curriculum", label: "Curriculum" },
 ];
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  await requireAdmin();
   return (
     <div className="flex min-h-screen">
       <nav className="w-48 border-r bg-muted/30 p-4 space-y-1 shrink-0">

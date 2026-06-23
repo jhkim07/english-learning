@@ -4,6 +4,7 @@ interface ArtifactRecord {
   artifactId: string;
   artifactType: string;
   content: Record<string, unknown>;
+  vocabArtifactId?: string | null;
 }
 
 export function buildFlashcards(artifacts: ArtifactRecord[]): FlashcardData[] {
@@ -11,16 +12,25 @@ export function buildFlashcards(artifacts: ArtifactRecord[]): FlashcardData[] {
 
   const vocabArtifacts = artifacts.filter((a) => a.artifactType === "VOCABULARY_CARD");
   const sentenceArtifacts = artifacts.filter((a) => a.artifactType === "SENTENCE_CARD");
+  const mnemonicImages = artifacts.filter((a) => a.artifactType === "MNEMONIC_IMAGE");
 
   // Build vocab cards (front/back pairs treated as one card with flip)
   for (const artifact of vocabArtifacts) {
     const vocab = artifact.content;
+    const mnemonicImage = mnemonicImages.find(
+      (img) => img.vocabArtifactId === artifact.artifactId
+    );
+    const imageUrl =
+      (mnemonicImage?.content?.imageUrl as string | undefined) ??
+      (mnemonicImage?.content?.storagePath as string | undefined) ??
+      undefined;
     cards.push({
       id: artifact.artifactId,
       type: "vocab_front",
       front: {
         title: String(vocab.word ?? ""),
         subtitle: String(vocab.partOfSpeech ?? ""),
+        imageUrl,
         badge: "New Word",
       },
       back: {

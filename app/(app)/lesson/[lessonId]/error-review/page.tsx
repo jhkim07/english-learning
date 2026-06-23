@@ -14,9 +14,9 @@ export default async function ErrorReviewPage({
   const userId = DEV_BYPASS_AUTH ? "dev-user-id" : session?.user?.id;
   if (!userId) redirect("/login");
 
-  // Get today's study day from lesson
-  const lesson = await prisma.dailyLesson.findUnique({
-    where: { id: params.lessonId },
+  // Get today's study day from lesson — include ownership check to prevent IDOR
+  const lesson = await prisma.dailyLesson.findFirst({
+    where: { id: params.lessonId, userId },
     select: { studyDay: true },
   });
 

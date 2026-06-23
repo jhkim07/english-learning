@@ -66,7 +66,7 @@ export class DailyPlanner {
     const vocabWords = vocabResult.data.map((c) => c.word);
 
     const imageArtifacts = await Promise.all(
-      vocabResult.data.map((card) =>
+      vocabResult.data.map((card, idx) =>
         this.imageGen.generate({
           imagePrompt: card.imagePrompt,
           word: card.word,
@@ -88,6 +88,7 @@ export class DailyPlanner {
               content: imgResult as object,
               artifactType: "MNEMONIC_IMAGE",
               dailyLessonId,
+              vocabArtifactId: vocabArtifacts[idx].artifactId,
             },
           })
         )

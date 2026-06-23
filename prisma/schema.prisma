@@ -161,6 +161,7 @@ model AIArtifact {
   artifactId        String           @unique @default(cuid()) // immutable after freeze
   userId            String
   dailyLessonId     String
+  vocabArtifactId   String?          // for MNEMONIC_IMAGE: links to the parent VOCABULARY_CARD artifactId
   artifactType      ArtifactType
   studyDay          Int
   curriculumVersion Int

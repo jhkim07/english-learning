@@ -1,6 +1,8 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
+import { auth } from "@/auth";
+import { DEV_BYPASS_AUTH } from "@/lib/auth/dev-bypass";
 import { EvaluationAgent } from "@/lib/ai/evaluation";
 import { isMockMode } from "@/lib/ai/mock-registry";
 
@@ -20,6 +22,10 @@ interface SendTurnResult {
 export async function sendConversationTurn(
   input: SendTurnInput
 ): Promise<SendTurnResult> {
+  const session = await auth();
+  const userId = DEV_BYPASS_AUTH ? "dev-user-id" : session?.user?.id;
+  if (!userId) throw new Error("Unauthorized");
+
   const evaluator = new EvaluationAgent();
 
   if (isMockMode()) {
