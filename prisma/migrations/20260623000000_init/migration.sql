@@ -1,5 +1,5 @@
--- Enable pgvector extension
-CREATE EXTENSION IF NOT EXISTS vector;
+-- CreateExtension
+CREATE EXTENSION IF NOT EXISTS "vector";
 
 -- CreateEnum
 CREATE TYPE "GenerationStatus" AS ENUM ('PENDING', 'PARTIAL', 'READY', 'FAILED');
@@ -210,10 +210,10 @@ CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 CREATE INDEX "User_email_idx" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
+CREATE INDEX "Account_userId_idx" ON "Account"("userId");
 
 -- CreateIndex
-CREATE INDEX "Account_userId_idx" ON "Account"("userId");
+CREATE UNIQUE INDEX "Account_provider_providerAccountId_key" ON "Account"("provider", "providerAccountId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Session_sessionToken_key" ON "Session"("sessionToken");
@@ -231,19 +231,19 @@ CREATE UNIQUE INDEX "VerificationToken_identifier_token_key" ON "VerificationTok
 CREATE UNIQUE INDEX "UserProfile_userId_key" ON "UserProfile"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "MonthlyCurriculum_userId_month_year_key" ON "MonthlyCurriculum"("userId", "month", "year");
-
--- CreateIndex
 CREATE INDEX "MonthlyCurriculum_userId_idx" ON "MonthlyCurriculum"("userId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "DailyLesson_userId_calendarDate_key" ON "DailyLesson"("userId", "calendarDate");
+CREATE UNIQUE INDEX "MonthlyCurriculum_userId_month_year_key" ON "MonthlyCurriculum"("userId", "month", "year");
 
 -- CreateIndex
 CREATE INDEX "DailyLesson_userId_studyDay_idx" ON "DailyLesson"("userId", "studyDay");
 
 -- CreateIndex
 CREATE INDEX "DailyLesson_userId_calendarDate_idx" ON "DailyLesson"("userId", "calendarDate");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "DailyLesson_userId_calendarDate_key" ON "DailyLesson"("userId", "calendarDate");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AIArtifact_artifactId_key" ON "AIArtifact"("artifactId");
@@ -264,10 +264,10 @@ CREATE INDEX "GenerationJob_userId_dailyLessonId_idx" ON "GenerationJob"("userId
 CREATE INDEX "GenerationJob_status_scheduledFor_idx" ON "GenerationJob"("status", "scheduledFor");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PromptVersion_name_version_key" ON "PromptVersion"("name", "version");
+CREATE INDEX "PromptVersion_name_isActive_idx" ON "PromptVersion"("name", "isActive");
 
 -- CreateIndex
-CREATE INDEX "PromptVersion_name_isActive_idx" ON "PromptVersion"("name", "isActive");
+CREATE UNIQUE INDEX "PromptVersion_name_version_key" ON "PromptVersion"("name", "version");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "ModelVersion_modelId_key" ON "ModelVersion"("modelId");
@@ -313,3 +313,4 @@ ALTER TABLE "FlashcardAttempt" ADD CONSTRAINT "FlashcardAttempt_userId_fkey" FOR
 
 -- AddForeignKey
 ALTER TABLE "FlashcardAttempt" ADD CONSTRAINT "FlashcardAttempt_dailyLessonId_fkey" FOREIGN KEY ("dailyLessonId") REFERENCES "DailyLesson"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
