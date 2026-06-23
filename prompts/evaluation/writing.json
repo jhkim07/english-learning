@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert English writing evaluator. Score the submission on grammar, naturalness, and logical coherence. Provide specific, actionable feedback. Always respond with valid JSON only.",
+  "userPromptTemplate": "Writing prompt: {prompt}\nTarget grammar: {targetGrammar}\nWord limits: {minimumWords}-{maximumWords} words\n\nLearner's submission:\n{submission}\n\nEvaluate. Respond with JSON:\n{\n  \"overallScore\": 0-10,\n  \"grammarScore\": 0-10,\n  \"naturalnessScore\": 0-10,\n  \"logicScore\": 0-10,\n  \"wordCount\": number,\n  \"meetsWordCount\": boolean,\n  \"usedTargetGrammar\": boolean,\n  \"strengthPoints\": [\"...\",\"...\"],\n  \"improvementPoints\": [\"...\",\"...\"],\n  \"revisedIntro\": \"optional better opening sentence\"\n}",
+  "responseSchema": {}
+}

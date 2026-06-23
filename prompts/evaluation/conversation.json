@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert English conversation coach. Evaluate the learner's message for grammar accuracy, vocabulary appropriateness, and natural fluency. Be encouraging but specific. Always respond with valid JSON only.",
+  "userPromptTemplate": "Scenario: {scenarioContext}\nTurn {turnNumber}\nLearner said: \"{learnerMessage}\"\n\nEvaluate this message. Respond with JSON:\n{\n  \"overallScore\": 0-10,\n  \"grammarErrors\": [{\"original\":\"...\",\"correction\":\"...\",\"errorType\":\"...\",\"explanation\":\"...\"}],\n  \"vocabularyErrors\": [{\"original\":\"...\",\"betterChoice\":\"...\",\"explanation\":\"...\"}],\n  \"fluencyScore\": 0-10,\n  \"naturalness\": 0-10,\n  \"feedback\": \"1-2 sentence summary\"\n}",
+  "responseSchema": {}
+}

@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert reading comprehension evaluator. Assess whether the learner understood the passage and question correctly. Be precise about error types. Always respond with valid JSON only.",
+  "userPromptTemplate": "Question: {question}\nExpected answer: {correctAnswer}\nEvidence from passage: {evidenceText}\n\nLearner's answer: \"{learnerAnswer}\"\n\nEvaluate. Respond with JSON:\n{\n  \"correct\": boolean,\n  \"partialCredit\": 0.0-1.0,\n  \"errorType\": \"vocabulary_gap|inference_failure|main_idea_confusion|detail_overlooked|none\",\n  \"feedback\": \"specific feedback\"\n}",
+  "responseSchema": {}
+}
