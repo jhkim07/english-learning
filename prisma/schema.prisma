@@ -91,6 +91,8 @@ model UserProfile {
   // Level diagnosis answers (JSON blob — simple for V1)
   diagnosisAnswers Json?
 
+  isAdmin Boolean @default(false)
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

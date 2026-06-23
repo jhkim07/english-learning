@@ -1,6 +1,8 @@
 import { requireAuth } from "@/lib/session";
 import { signOut } from "@/auth";
 import { Button } from "@/components/ui/button";
+import { LessonStatusChecker } from "@/components/notifications/lesson-status-checker";
+import { getTodaysLessonId } from "./actions";
 
 export default async function AppLayout({
   children,
@@ -8,6 +10,7 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const session = await requireAuth();
+  const lessonId = await getTodaysLessonId();
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,6 +33,7 @@ export default async function AppLayout({
           </form>
         </div>
       </header>
+      <LessonStatusChecker lessonId={lessonId} />
       <main>{children}</main>
     </div>
   );
