@@ -21,6 +21,12 @@ export default async function AppLayout({
           <span className="text-sm text-muted-foreground">
             {session.user?.name ?? session.user?.email}
           </span>
+          <a
+            href="/settings/privacy"
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Privacy
+          </a>
           <form
             action={async () => {
               "use server";
