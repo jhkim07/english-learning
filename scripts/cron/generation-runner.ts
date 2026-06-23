@@ -67,11 +67,17 @@ async function processUserGeneration(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  // Create DailyLesson record if it doesn't exist yet
+  // Create or update DailyLesson record — upsert ensures idempotency if cron runs twice
   let dailyLessonId = schedule.dailyLessonId;
   if (!dailyLessonId) {
-    const lesson = await prisma.dailyLesson.create({
-      data: {
+    const lesson = await prisma.dailyLesson.upsert({
+      where: {
+        userId_calendarDate: {
+          userId: user.id,
+          calendarDate: today,
+        },
+      },
+      create: {
         userId: user.id,
         curriculumId: curriculum.id,
         studyDay: schedule.studyDay,
@@ -83,9 +89,10 @@ async function processUserGeneration(
         speakingStatus: "PENDING",
         writingStatus: "PENDING",
       },
+      update: {},
     });
     dailyLessonId = lesson.id;
-    console.log(`[DailyGeneration] Created DailyLesson ${dailyLessonId} for user ${user.id} day ${schedule.studyDay}`);
+    console.log(`[DailyGeneration] Created or retrieved DailyLesson ${dailyLessonId} for user ${user.id} day ${schedule.studyDay}`);
   }
 
   if (!dailyLessonId) {

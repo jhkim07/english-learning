@@ -7,7 +7,7 @@ jest.mock("@/lib/db", () => ({
       findMany: jest.fn(),
     },
     dailyLesson: {
-      create: jest.fn(),
+      upsert: jest.fn(),
     },
     aIArtifact: {
       findMany: jest.fn(),
@@ -82,12 +82,12 @@ describe("runDailyGeneration", () => {
       getNextStudyDay: mockGetNextStudyDay,
     }));
 
-    (prisma.dailyLesson.create as jest.Mock).mockResolvedValue({ id: "lesson-new-1" });
+    (prisma.dailyLesson.upsert as jest.Mock).mockResolvedValue({ id: "lesson-new-1" });
     (prisma.aIArtifact.findMany as jest.Mock).mockResolvedValue([]);
 
     await runDailyGeneration();
 
-    expect(prisma.dailyLesson.create).toHaveBeenCalledTimes(1);
+    expect(prisma.dailyLesson.upsert).toHaveBeenCalledTimes(1);
     expect(enqueueGenerationJob).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: "user-2",
