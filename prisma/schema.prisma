@@ -122,6 +122,7 @@ model DailyLesson {
   calendarDate     DateTime         @db.Date
   generationStatus GenerationStatus @default(PENDING)
   frozenAt         DateTime? // set when lesson is frozen; artifacts become immutable
+  isOpen           Boolean   @default(false) // set to true when frozen
 
   // Component generation status (DailyLesson is a pure aggregator)
   vocabStatus    GenerationStatus @default(PENDING)
