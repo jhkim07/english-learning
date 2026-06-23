@@ -127,13 +127,13 @@ export function ErrorReviewClient({ lessonId, reviewItems }: Props) {
                 className="border-red-300 text-red-600 hover:bg-red-50"
                 onClick={() => handleResult(false)}
               >
-                Still confused
+                ✗ Still confused
               </Button>
               <Button
                 className="bg-green-500 hover:bg-green-600"
                 onClick={() => handleResult(true)}
               >
-                Got it!
+                ✓ Got it!
               </Button>
             </div>
           </div>

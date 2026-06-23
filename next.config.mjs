@@ -4,7 +4,7 @@ const nextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "images.pexels.com" },
-      // R2 bucket hostname added in Task 12
+      { protocol: "https", hostname: "*.r2.cloudflarestorage.com" },
     ],
   },
   async headers() {

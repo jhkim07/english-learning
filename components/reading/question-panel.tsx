@@ -60,7 +60,7 @@ export function QuestionPanel({ questionState, questionNumber, totalQuestions, o
 
       {answered && (
         <div className={`p-3 rounded-lg text-xs ${isCorrect ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-          <p className="font-medium">{isCorrect ? "Correct!" : "Incorrect"}</p>
+          <p className="font-medium">{isCorrect ? "✓ Correct" : "✗ Incorrect"}</p>
           <p className="mt-1">{question.explanation}</p>
         </div>
       )}

@@ -15,21 +15,23 @@ export function SwipeButtons({ onSwipe, disabled }: Props) {
       <Button
         variant="outline"
         size="lg"
-        className="w-24 h-14 border-red-300 text-red-500 hover:bg-red-50"
+        className="w-28 h-14 border-red-300 text-red-500 hover:bg-red-50"
         onClick={() => onSwipe("left")}
         disabled={disabled}
-        aria-label="Missed it"
+        aria-label="Incorrect"
       >
-        <X className="w-6 h-6" />
+        <X className="w-5 h-5 mr-1" />
+        Incorrect
       </Button>
       <Button
         size="lg"
-        className="w-24 h-14 bg-green-500 hover:bg-green-600"
+        className="w-28 h-14 bg-green-500 hover:bg-green-600"
         onClick={() => onSwipe("right")}
         disabled={disabled}
-        aria-label="Got it"
+        aria-label="Correct"
       >
-        <Check className="w-6 h-6" />
+        <Check className="w-5 h-5 mr-1" />
+        Correct
       </Button>
     </div>
   );

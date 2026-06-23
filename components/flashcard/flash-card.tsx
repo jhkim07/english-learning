@@ -38,7 +38,8 @@ export function FlashCard({ card, isFlipped, onFlip }: Props) {
           {card.front.imageUrl ? (
             <img
               src={card.front.imageUrl}
-              alt={card.front.title}
+              alt={card.front.title ?? "Mnemonic image"}
+              loading="lazy"
               className="max-h-32 object-contain rounded-lg"
             />
           ) : (
