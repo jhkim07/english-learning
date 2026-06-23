@@ -1,0 +1,305 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pgvector(map: "vector")]
+}
+
+// ─── Users & Auth ────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // NextAuth relations (added in Task 5)
+  accounts      Account[]
+  sessions      Session[]
+
+  profile           UserProfile?
+  curricula         MonthlyCurriculum[]
+  dailyLessons      DailyLesson[]
+  aiArtifacts       AIArtifact[]
+  generationJobs    GenerationJob[]
+  flashcardAttempts FlashcardAttempt[]
+
+  @@index([email])
+}
+
+// NextAuth Account model (required by NextAuth.js v5 Prisma adapter)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// NextAuth Session model
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// NextAuth VerificationToken model
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── User Profile ────────────────────────────────────────────────────────────
+
+model UserProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  currentLevel       Int      @default(1) // 1–5 (beginner to advanced)
+  studyGoal          String? // "비즈니스 영어", "학술 영어", etc.
+  dailyTargetMinutes Int      @default(50)
+  timezone           String   @default("Asia/Seoul")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  // Level diagnosis answers (JSON blob — simple for V1)
+  diagnosisAnswers Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Curriculum & Daily Lessons ──────────────────────────────────────────────
+
+model MonthlyCurriculum {
+  id           String   @id @default(cuid())
+  userId       String
+  month        Int // 1–12
+  year         Int
+  version      Int      @default(1) // curriculum_version for AIArtifact tracking
+  theme        String? // e.g., "비즈니스 영어 기초"
+  vocabDomains String[] @default([]) // word domains covered this month
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLessons DailyLesson[]
+
+  @@unique([userId, month, year])
+  @@index([userId])
+}
+
+model DailyLesson {
+  id               String           @id @default(cuid())
+  userId           String
+  curriculumId     String
+  studyDay         Int // 1–20 (day within the month curriculum)
+  calendarDate     DateTime         @db.Date
+  generationStatus GenerationStatus @default(PENDING)
+  frozenAt         DateTime? // set when lesson is frozen; artifacts become immutable
+
+  // Component generation status (DailyLesson is a pure aggregator)
+  vocabStatus    GenerationStatus @default(PENDING)
+  sentenceStatus GenerationStatus @default(PENDING)
+  readingStatus  GenerationStatus @default(PENDING)
+  speakingStatus GenerationStatus @default(PENDING)
+  writingStatus  GenerationStatus @default(PENDING)
+
+  // Session tracking
+  sessionStartedAt   DateTime?
+  sessionCompletedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  curriculum     MonthlyCurriculum @relation(fields: [curriculumId], references: [id])
+  aiArtifacts    AIArtifact[]
+  generationJobs GenerationJob[]
+  flashcardAttempts FlashcardAttempt[]
+
+  @@unique([userId, calendarDate])
+  @@index([userId, studyDay])
+  @@index([userId, calendarDate])
+}
+
+// ─── AI Artifacts & Generation ───────────────────────────────────────────────
+
+model AIArtifact {
+  id                String           @id @default(cuid())
+  artifactId        String           @unique @default(cuid()) // immutable after freeze
+  userId            String
+  dailyLessonId     String
+  artifactType      ArtifactType
+  studyDay          Int
+  curriculumVersion Int
+  difficultyLevel   Int              @default(1) // 1–5
+  generationSeed    String?
+  modelVersion      String // e.g., "claude-sonnet-4-6"
+  promptVersion     String // e.g., "vocab-gen-v1.2"
+  generatedAt       DateTime         @default(now())
+  validationStatus  ValidationStatus @default(PENDING)
+  validationScore   Float?
+  safetyStatus      SafetyStatus     @default(PENDING)
+
+  // The actual content as JSON (schema varies by artifactType)
+  content Json
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
+
+  @@index([userId, dailyLessonId])
+  @@index([userId, artifactType])
+  @@index([dailyLessonId, artifactType])
+}
+
+model GenerationJob {
+  id            String    @id @default(cuid())
+  userId        String
+  dailyLessonId String
+  jobType       JobType
+  status        JobStatus @default(QUEUED)
+  attempts      Int       @default(0)
+  maxAttempts   Int       @default(3)
+  errorMessage  String?   @db.Text
+  bullmqJobId   String? // BullMQ job ID for tracking
+  scheduledFor  DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
+
+  @@index([userId, dailyLessonId])
+  @@index([status, scheduledFor])
+}
+
+// ─── Prompt & Model Versioning ───────────────────────────────────────────────
+
+model PromptVersion {
+  id          String   @id @default(cuid())
+  name        String // e.g., "vocab-gen"
+  version     String // e.g., "v1.2"
+  description String?
+  filePath    String // relative path in prompts/ directory
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@unique([name, version])
+  @@index([name, isActive])
+}
+
+model ModelVersion {
+  id          String   @id @default(cuid())
+  modelId     String   @unique // e.g., "claude-sonnet-4-6"
+  provider    String // "anthropic" | "openai"
+  displayName String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+// ─── Flashcard Attempts (placeholder — Phase 4a fills implementation) ─────────
+// This table exists in Phase 1 to break the Phase 3/4a circular dependency.
+// ReviewQueueEngine (Phase 3) reads this; Phase 4a writes to it.
+
+model FlashcardAttempt {
+  id            String   @id @default(cuid())
+  userId        String
+  dailyLessonId String
+  cardId        String // references AIArtifact.artifactId
+  cardType      CardType
+  response      Int // 0=모름, 1=어려움, 2=앎, 3=완벽
+  firstAttemptAt DateTime @default(now()) // immutable after first attempt
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
+
+  @@index([userId, dailyLessonId])
+  @@index([userId, cardType])
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum GenerationStatus {
+  PENDING
+  PARTIAL
+  READY
+  FAILED
+}
+
+enum ArtifactType {
+  VOCABULARY_CARD
+  SENTENCE_CARD
+  MNEMONIC_IMAGE
+  READING_PASSAGE
+  READING_QUESTION
+  ADAPTIVE_QUESTION
+  SPEAKING_SCENARIO
+  WRITING_PROMPT
+  EVALUATION_RESULT
+}
+
+enum ValidationStatus {
+  PENDING
+  PASSED
+  FAILED
+  SKIPPED
+}
+
+enum SafetyStatus {
+  PENDING
+  SAFE
+  FLAGGED
+  BLOCKED
+}
+
+enum JobType {
+  GENERATE_DAILY_PACKAGE
+  GENERATE_VOCABULARY
+  GENERATE_SENTENCE_CARDS
+  GENERATE_READING
+  GENERATE_SPEAKING_SCENARIO
+  GENERATE_WRITING_PROMPT
+  GENERATE_MNEMONIC_IMAGES
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum CardType {
+  VOCABULARY
+  SENTENCE
+  REVIEW
+}
