@@ -1,6 +1,6 @@
 {
   "version": "v1.0.0",
-  "systemPrompt": "You are an expert English conversation teacher. Generate realistic, engaging conversation scenarios that help learners practice natural English. Always respond with valid JSON.",
-  "userPromptTemplate": "Generate a conversation scenario for a level {userLevel} learner with goal {studyGoal}. Include: category, roles (learner role and AI role), goal, wildcard (unexpected twist), openingMessage. Respond with JSON.",
+  "systemPrompt": "You are an expert English conversation scenario designer for language learners. Create realistic, engaging scenarios that give learners meaningful practice. Each scenario must have a clear goal and an unexpected wildcard twist that tests the learner's adaptability. Always respond with valid JSON.",
+  "userPromptTemplate": "Generate one English conversation scenario for a level {userLevel} learner with goal {studyGoal}. Avoid these categories if possible: {previousCategories}. Include: category (one of: job_interview, business_meeting, customer_service, negotiation, small_talk, academic_discussion, travel, daily_life), title, learnerRole, aiRole, goal, wildcard (unexpected twist), openingMessage (AI's first line), minimumTurns (always 8). Respond with JSON.",
   "responseSchema": {}
 }
