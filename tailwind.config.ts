@@ -50,6 +50,20 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        "pulse-ring": {
+          "0%, 100%": { opacity: "1", transform: "scale(1)" },
+          "50%": { opacity: "0.5", transform: "scale(1.1)" },
+        },
+        "stroke-progress": {
+          from: { "stroke-dashoffset": "100" },
+          to: { "stroke-dashoffset": "0" },
+        },
+      },
+      animation: {
+        "pulse-ring": "pulse-ring 2s ease-in-out infinite",
+        "stroke-progress": "stroke-progress 1s ease-out forwards",
+      },
     },
   },
   plugins: [],
