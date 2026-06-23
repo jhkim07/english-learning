@@ -7,7 +7,8 @@ jest.mock("@/lib/db", () => ({
   prisma: {
     dailyLesson: {
       findFirst: jest.fn(),
-      update: jest.fn(),
+      updateMany: jest.fn(),
+      findUnique: jest.fn(),
     },
     aIArtifact: {
       findMany: jest.fn(),
@@ -54,8 +55,10 @@ describe("POST /api/daily-lesson/freeze", () => {
       curriculum: { userId: "dev-user-id" },
     };
 
+    const frozenAtValue = new Date();
     (prisma.dailyLesson.findFirst as jest.Mock).mockResolvedValue(mockLesson);
-    (prisma.dailyLesson.update as jest.Mock).mockResolvedValue({ ...mockLesson, frozenAt: new Date(), isOpen: true });
+    (prisma.dailyLesson.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+    (prisma.dailyLesson.findUnique as jest.Mock).mockResolvedValue({ frozenAt: frozenAtValue });
     (prisma.aIArtifact.findMany as jest.Mock).mockResolvedValue([
       { artifactId: "art-1", artifactType: "VOCABULARY_CARD", content: { word: "leverage" }, validationStatus: "PASSED" },
       { artifactId: "art-2", artifactType: "READING_PASSAGE", content: { title: "Remote Work" }, validationStatus: "PASSED" },
@@ -67,8 +70,8 @@ describe("POST /api/daily-lesson/freeze", () => {
 
     expect(res.status).toBe(200);
     expect(json.frozenAt).toBeTruthy();
-    expect(prisma.dailyLesson.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: "lesson-1" } })
+    expect(prisma.dailyLesson.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ id: "lesson-1", frozenAt: null }) })
     );
     expect(json.artifacts.vocabCards).toHaveLength(1);
     expect(json.artifacts.readingPassage).toBeTruthy();
@@ -84,6 +87,8 @@ describe("POST /api/daily-lesson/freeze", () => {
     };
 
     (prisma.dailyLesson.findFirst as jest.Mock).mockResolvedValue(mockLesson);
+    (prisma.dailyLesson.updateMany as jest.Mock).mockResolvedValue({ count: 0 });
+    (prisma.dailyLesson.findUnique as jest.Mock).mockResolvedValue({ frozenAt: existingFrozenAt });
     (prisma.aIArtifact.findMany as jest.Mock).mockResolvedValue([]);
 
     const req = makeRequest({ dailyLessonId: "lesson-2" });
@@ -91,7 +96,6 @@ describe("POST /api/daily-lesson/freeze", () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(prisma.dailyLesson.update).not.toHaveBeenCalled();
     expect(new Date(json.frozenAt).getTime()).toBe(existingFrozenAt.getTime());
   });
 });

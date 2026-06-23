@@ -38,18 +38,23 @@ export async function openLesson(dailyLessonId: string): Promise<FrozenLesson> {
     throw new Error("Lesson not found or not ready");
   }
 
-  // Idempotent: return existing frozen state if already open
-  const frozenAt = lesson.frozenAt ?? new Date();
+  const frozenAt = new Date();
 
-  if (!lesson.frozenAt) {
-    await prisma.dailyLesson.update({
-      where: { id: dailyLessonId },
-      data: { frozenAt, isOpen: true },
-    });
-  }
+  // Atomic freeze: only updates if frozenAt is still null (wins the race)
+  await prisma.dailyLesson.updateMany({
+    where: { id: dailyLessonId, frozenAt: null },
+    data: { frozenAt, isOpen: true },
+  });
+
+  // Regardless of who won the race, fetch the current frozenAt
+  const finalLesson = await prisma.dailyLesson.findUnique({
+    where: { id: dailyLessonId },
+    select: { frozenAt: true },
+  });
+  const finalFrozenAt = finalLesson!.frozenAt!;
 
   const artifacts = await prisma.aIArtifact.findMany({
-    where: { dailyLessonId, userId },
+    where: { dailyLessonId, userId, validationStatus: "PASSED" },
     select: {
       artifactId: true,
       artifactType: true,
@@ -60,7 +65,7 @@ export async function openLesson(dailyLessonId: string): Promise<FrozenLesson> {
   return {
     dailyLessonId,
     studyDay: lesson.studyDay,
-    frozenAt,
+    frozenAt: finalFrozenAt,
     artifacts: {
       vocabCards: artifacts
         .filter((a) => a.artifactType === "VOCABULARY_CARD")

@@ -33,21 +33,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Lesson not found or not ready" }, { status: 404 });
   }
 
-  // Idempotent freeze: if already frozen, return current frozenAt
-  if (lesson.frozenAt) {
-    const artifacts = await getArtifacts(dailyLessonId, userId);
-    return NextResponse.json({ frozenAt: lesson.frozenAt, artifacts });
-  }
-
-  // Freeze the lesson
   const frozenAt = new Date();
-  await prisma.dailyLesson.update({
-    where: { id: dailyLessonId },
+
+  // Atomic freeze: only updates if frozenAt is still null (wins the race)
+  await prisma.dailyLesson.updateMany({
+    where: { id: dailyLessonId, frozenAt: null },
     data: { frozenAt, isOpen: true },
   });
 
+  // Regardless of who won the race, fetch the current frozenAt
+  const finalLesson = await prisma.dailyLesson.findUnique({
+    where: { id: dailyLessonId },
+    select: { frozenAt: true },
+  });
+  const finalFrozenAt = finalLesson!.frozenAt!;
+
   const artifacts = await getArtifacts(dailyLessonId, userId);
-  return NextResponse.json({ frozenAt, artifacts });
+  return NextResponse.json({ frozenAt: finalFrozenAt, artifacts });
 }
 
 async function getArtifacts(dailyLessonId: string, userId: string) {
@@ -55,6 +57,7 @@ async function getArtifacts(dailyLessonId: string, userId: string) {
     where: {
       dailyLessonId,
       userId,
+      validationStatus: "PASSED",
     },
     select: {
       artifactId: true,
