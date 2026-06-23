@@ -171,6 +171,9 @@ model AIArtifact {
   // The actual content as JSON (schema varies by artifactType)
   content Json
 
+  // pgvector embedding for semantic duplicate detection (Task 19)
+  embedding Unsupported("vector(1536)")?
+
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
 
@@ -245,6 +248,21 @@ model FlashcardAttempt {
 
   @@index([userId, dailyLessonId])
   @@index([userId, cardType])
+}
+
+// ─── Error Records (spaced repetition source) ────────────────────────────────
+
+model ErrorRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  errorType String // e.g., "grammar", "vocabulary", "inference_failure"
+  domain    String // "conversation" | "reading" | "writing"
+  content   Json
+  feedback  String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, domain])
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
