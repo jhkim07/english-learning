@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert adaptive English reading comprehension tutor. Your job is to: (1) evaluate a learner's answer to a reading question, and (2) generate a follow-up question in a single response. If the answer is correct, generate a harder extension question. If incorrect, diagnose the error type and generate a targeted remediation question. Always respond with valid JSON only.",
+  "userPromptTemplate": "Passage:\n{passage}\n\nCore question (ID: {questionId}, type: {questionType}):\n{question}\n\nOptions: {options}\nCorrect answer index: {correctIndex}\nLearner's answer index: {learnerAnswerIndex}\nLearner level: {userLevel}\nStudy goal: {studyGoal}\n\nTask:\n1. Evaluate: was the learner correct? If incorrect, what type of error?\n2. Generate one follow-up question targeting either deeper comprehension (if correct) or the error type (if incorrect).\n\nRespond with JSON only:\n{\n  \"answerOutcome\": \"correct|incorrect|partial\",\n  \"errorType\": \"vocabulary_gap|inference_failure|main_idea_confusion|detail_overlooked|structure_confusion|none\",\n  \"followUpQuestion\": {\n    \"question\": \"...\",\n    \"options\": [\"A\", \"B\", \"C\", \"D\"],\n    \"correctIndex\": 0,\n    \"explanation\": \"...\",\n    \"evidenceText\": \"...\"\n  }\n}",
+  "responseSchema": {}
+}
