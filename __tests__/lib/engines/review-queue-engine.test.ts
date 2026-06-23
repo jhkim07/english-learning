@@ -92,4 +92,46 @@ describe("ReviewQueueEngine", () => {
     );
     expect(sameWordItems.length).toBeLessThanOrEqual(1);
   });
+
+  it("isDuplicateVocab returns false when no similar vocabulary exists", async () => {
+    (prisma.$queryRaw as jest.Mock).mockResolvedValue([]);
+
+    const embedding = [0.1, 0.2, 0.3];
+    const result = await engine.isDuplicateVocab(embedding, MOCK_USER_ID, 0.15);
+
+    expect(result).toBe(false);
+  });
+
+  it("isDuplicateVocab returns true when similarity exceeds threshold", async () => {
+    (prisma.$queryRaw as jest.Mock).mockResolvedValue([{ distance: 0.9 }]);
+
+    const embedding = [0.1, 0.2, 0.3];
+    // threshold = 0.15, so similarity threshold = 1 - 0.15 = 0.85
+    // distance = 0.9 >= 0.85 should return true
+    const result = await engine.isDuplicateVocab(embedding, MOCK_USER_ID, 0.15);
+
+    expect(result).toBe(true);
+  });
+
+  it("sorts items by priority descending (older errors have higher priority)", async () => {
+    // Create errors with different ages: 10 days ago, 5 days ago, 1 day ago
+    // Older errors should have higher priority
+    const oldError = makeError("old-err", "vocabulary", "spelling", 10);
+    const midError = makeError("mid-err", "vocabulary", "spelling", 5);
+    const recentError = makeError("recent-err", "vocabulary", "spelling", 1);
+
+    (prisma.errorRecord.findMany as jest.Mock).mockResolvedValue([
+      recentError,
+      oldError,
+      midError,
+    ]);
+
+    const result = await engine.getReviewQueue(MOCK_USER_ID, 5);
+
+    expect(result.items.length).toBeGreaterThan(0);
+    // First item should have higher priority than last item
+    const firstPriority = result.items[0].priority;
+    const lastPriority = result.items[result.items.length - 1].priority;
+    expect(firstPriority).toBeGreaterThanOrEqual(lastPriority);
+  });
 });
