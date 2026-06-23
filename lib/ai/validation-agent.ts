@@ -1,7 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { PromptLoader } from "./prompt-loader";
 import { isMockMode } from "./mock-registry";
-import type { VocabularyCard } from "./generators/vocabulary/types";
 
 export interface ValidationResult {
   approved: boolean;
@@ -11,7 +10,8 @@ export interface ValidationResult {
   promptVersion: string;
 }
 
-type ValidatableContent = VocabularyCard | VocabularyCard[];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ValidatableContent = any;
 
 export class ValidationAgent {
   private client: Anthropic;

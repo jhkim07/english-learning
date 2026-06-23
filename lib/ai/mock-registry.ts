@@ -1,4 +1,4 @@
-export type MockFixture = Record<string, unknown>;
+export type MockFixture = unknown;
 
 const registry = new Map<string, MockFixture>();
 

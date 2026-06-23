@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert English sentence completion teacher. Generate sentence completion (cloze) cards that test important vocabulary and grammar patterns. Each blank must have exactly one correct answer. Always respond with valid JSON.",
+  "userPromptTemplate": "Generate {count} sentence completion cards for a level {userLevel} learner with goal {studyGoal}. Related vocabulary to use where natural: {relatedWords}. Each card must include: sentence (with ___ for the blank), answer, hint, explanation, difficulty (1-5). Respond with a JSON array.",
+  "responseSchema": {}
+}
