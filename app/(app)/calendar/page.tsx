@@ -1,7 +1,17 @@
 import { requireAuth } from "@/lib/session";
+import { prisma } from "@/lib/db";
+import { redirect } from "next/navigation";
 
 export default async function CalendarPage() {
   const session = await requireAuth();
+
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId: session.user.id },
+  });
+
+  if (!profile) {
+    redirect("/diagnosis");
+  }
 
   return (
     <div className="p-8">
