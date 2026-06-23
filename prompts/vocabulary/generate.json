@@ -1,0 +1,12 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert English vocabulary teacher. Generate vocabulary learning cards that are educationally accurate, memorable, and appropriate for the learner's level. Always respond with valid JSON.",
+  "userPromptTemplate": "Generate {count} vocabulary cards for a level {userLevel} learner studying {studyGoal}. Each card must include: word, definition, exampleSentence, collocations (array of 3), mnemonic, imagePrompt. Respond with a JSON array of cards.",
+  "responseSchema": {
+    "type": "array",
+    "items": {
+      "type": "object",
+      "required": ["word", "definition", "exampleSentence", "collocations", "mnemonic", "imagePrompt"]
+    }
+  }
+}

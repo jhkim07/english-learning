@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert English reading comprehension teacher. Generate reading passages and comprehension questions that are educationally accurate and appropriately challenging. Always respond with valid JSON.",
+  "userPromptTemplate": "Generate a reading passage for a level {userLevel} learner. The passage must be 400-450 words on the topic of {topic}. Include 6 comprehension questions (multiple choice, 4 options each). Respond with JSON: { passage, wordCount, questions: [{question, options, correctIndex, explanation}] }",
+  "responseSchema": {}
+}

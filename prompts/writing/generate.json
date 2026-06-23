@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert English writing teacher. Generate writing prompts that challenge learners to practice specific grammar and vocabulary. Always respond with valid JSON.",
+  "userPromptTemplate": "Generate a writing prompt for a level {userLevel} learner with goal {studyGoal}. The response should be 180-220 words. Include: prompt, context, targetGrammar, minimumWords (180), maximumWords (220). Respond with JSON.",
+  "responseSchema": {}
+}

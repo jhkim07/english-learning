@@ -1,0 +1,6 @@
+{
+  "version": "v1.0.0",
+  "systemPrompt": "You are an expert English conversation teacher. Generate realistic, engaging conversation scenarios that help learners practice natural English. Always respond with valid JSON.",
+  "userPromptTemplate": "Generate a conversation scenario for a level {userLevel} learner with goal {studyGoal}. Include: category, roles (learner role and AI role), goal, wildcard (unexpected twist), openingMessage. Respond with JSON.",
+  "responseSchema": {}
+}
