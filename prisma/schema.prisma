@@ -266,6 +266,44 @@ model ErrorRecord {
   @@index([userId, domain])
 }
 
+// ─── Assessment & Progression ────────────────────────────────────────────────
+
+model WeeklyAssessment {
+  id           String   @id @default(cuid())
+  userId       String
+  weekNumber   Int      // 1–4
+  score        Float    // 0.0–1.0
+  totalItems   Int
+  correctItems Int
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([userId, weekNumber])
+}
+
+model MonthlyExam {
+  id           String   @id @default(cuid())
+  userId       String
+  score        Float
+  totalItems   Int
+  correctItems Int
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
+model ProgressionDecision {
+  id           String   @id @default(cuid())
+  userId       String
+  decision     String   // "promote" | "stay" | "remediation"
+  currentLevel Int
+  nextLevel    Int?
+  reason       String
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum GenerationStatus {
