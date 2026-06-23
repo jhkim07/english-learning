@@ -7,6 +7,17 @@ const nextConfig = {
       // R2 bucket hostname added in Task 12
     ],
   },
+  async headers() {
+    return [
+      {
+        source: "/sw.js",
+        headers: [
+          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
+          { key: "Content-Type", value: "application/javascript" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
