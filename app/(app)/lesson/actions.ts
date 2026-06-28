@@ -29,7 +29,7 @@ export async function openLesson(dailyLessonId: string): Promise<FrozenLesson> {
   const lesson = await prisma.dailyLesson.findFirst({
     where: {
       id: dailyLessonId,
-      curriculum: { userId },
+      userId,
       generationStatus: "READY",
     },
   });
