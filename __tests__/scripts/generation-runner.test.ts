@@ -93,6 +93,7 @@ describe("runDailyGeneration", () => {
         userId: "user-2",
         studyDay: 1,
         dailyLessonId: "lesson-new-1",
+        planningContext: expect.objectContaining({ userLevel: 3 }),
       })
     );
   });

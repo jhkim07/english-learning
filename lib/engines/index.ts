@@ -17,3 +17,5 @@ export type {
   WritingParams,
 } from "./difficulty-calibrator";
 export { DAILY_VOLUME } from "./constants";
+export { adjustLevels } from "./level-adjustment-engine";
+export type { LevelAdjustmentResult } from "./level-adjustment-engine";
