@@ -1,8 +1,10 @@
 import { requireAuth } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { CalendarGrid } from "@/components/calendar/calendar-grid";
 import { buildCalendarSlots } from "@/lib/calendar";
+import { LevelBadge } from "@/components/level-badge";
 import { format } from "date-fns";
 
 export default async function CalendarPage() {
@@ -35,7 +37,13 @@ export default async function CalendarPage() {
   const slots = buildCalendarSlots(curriculum, now);
 
   return (
-    <div className="p-4 md:p-8 max-w-2xl mx-auto">
+    <div className="h-full overflow-y-auto">
+      <div className="p-4 pb-10 md:p-8 md:pb-12 max-w-2xl mx-auto">
+      <div className="mb-4">
+        <Suspense fallback={null}>
+          <LevelBadge />
+        </Suspense>
+      </div>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">학습 캘린더</h1>
@@ -51,6 +59,7 @@ export default async function CalendarPage() {
       </div>
 
       <CalendarGrid slots={slots.days} todayStudyDay={slots.todayStudyDay} />
+      </div>
     </div>
   );
 }
