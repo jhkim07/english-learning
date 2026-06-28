@@ -3,11 +3,22 @@ process.env.AI_MOCK_MODE = "true";
 // Mock prisma to avoid real DB
 jest.mock("@/lib/db", () => ({
   prisma: {
+    $queryRaw: jest.fn().mockResolvedValue([]),  // content-db DB-first lookups → empty → AI fallback
+    $executeRaw: jest.fn().mockResolvedValue(0),
     aIArtifact: {
       create: jest.fn().mockResolvedValue({ artifactId: "mock-artifact-id" }),
     },
     dailyLesson: {
       update: jest.fn().mockResolvedValue({}),
+    },
+    levelProfile: {
+      upsert: jest.fn().mockResolvedValue({
+        vocabulary: 1.0,
+        conversation: 1.0,
+        reading: 1.0,
+        writing: 1.0,
+        pendingReviewItems: [],
+      }),
     },
   },
 }));
@@ -49,6 +60,7 @@ describe("DailyPlanner (mock mode)", () => {
     expect(result.sentenceArtifactIds).toHaveLength(4);
     expect(result.readingArtifactId).toBeTruthy();
     expect(result.speakingArtifactId).toBeTruthy();
+    expect(result.speakingArtifactIds).toHaveLength(2);
     expect(result.writingArtifactId).toBeTruthy();
     expect(result.imageArtifactIds).toHaveLength(12);
     expect(result.generatedAt).toBeInstanceOf(Date);
