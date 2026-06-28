@@ -30,6 +30,11 @@ model User {
   aiArtifacts       AIArtifact[]
   generationJobs    GenerationJob[]
   flashcardAttempts FlashcardAttempt[]
+  levelProfile      LevelProfile?
+  levelHistories    LevelHistory[]
+  readingAttempts   ReadingAttempt[]
+  speakingEvaluations SpeakingEvaluation[]
+  writingSubmissions  WritingSubmission[]
 
   @@index([email])
 }
@@ -121,7 +126,7 @@ model MonthlyCurriculum {
 model DailyLesson {
   id               String           @id @default(cuid())
   userId           String
-  curriculumId     String
+  curriculumId     String?
   studyDay         Int // 1–20 (day within the month curriculum)
   calendarDate     DateTime         @db.Date
   generationStatus GenerationStatus @default(PENDING)
@@ -143,10 +148,13 @@ model DailyLesson {
   updatedAt DateTime @updatedAt
 
   user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  curriculum     MonthlyCurriculum @relation(fields: [curriculumId], references: [id])
+  curriculum     MonthlyCurriculum? @relation(fields: [curriculumId], references: [id])
   aiArtifacts    AIArtifact[]
   generationJobs GenerationJob[]
   flashcardAttempts FlashcardAttempt[]
+  readingAttempts   ReadingAttempt[]
+  speakingEvaluations SpeakingEvaluation[]
+  writingSubmissions  WritingSubmission[]
 
   @@unique([userId, calendarDate])
   @@unique([curriculumId, studyDay])
@@ -165,7 +173,7 @@ model AIArtifact {
   artifactType      ArtifactType
   studyDay          Int
   curriculumVersion Int
-  difficultyLevel   Int              @default(1) // 1–5
+  difficultyLevel   Float            @default(1.0) // 1.0–5.0
   generationSeed    String?
   modelVersion      String // e.g., "claude-sonnet-4-6"
   promptVersion     String // e.g., "vocab-gen-v1.2"
@@ -309,6 +317,81 @@ model ProgressionDecision {
   @@index([userId])
 }
 
+// ─── Level-Based Adaptive Models ─────────────────────────────────────────────
+
+model LevelProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  vocabulary         Float    @default(1.0)
+  conversation       Float    @default(1.0)
+  reading            Float    @default(1.0)
+  writing            Float    @default(1.0)
+  sessionCount       Int      @default(0)
+  pendingReviewItems Json     @default("[]")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LevelHistory {
+  id            String            @id @default(cuid())
+  userId        String
+  area          LevelArea
+  fromLevel     Float
+  toLevel       Float
+  reason        LevelChangeReason
+  dailyLessonId String?
+  createdAt     DateTime          @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dailyLessonId, area])
+  @@index([userId, area])
+  @@index([userId, createdAt])
+}
+
+model ReadingAttempt {
+  id            String   @id @default(cuid())
+  userId        String
+  dailyLessonId String
+  questionId    String
+  isCorrect     Boolean
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
+
+  @@index([userId, dailyLessonId])
+}
+
+model SpeakingEvaluation {
+  id            String   @id @default(cuid())
+  userId        String
+  dailyLessonId String
+  score         Float
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
+
+  @@unique([userId, dailyLessonId])
+  @@index([userId, dailyLessonId])
+}
+
+model WritingSubmission {
+  id              String   @id @default(cuid())
+  userId          String
+  dailyLessonId   String
+  evaluationScore Float
+  createdAt       DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
+
+  @@index([userId, dailyLessonId])
+}
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum GenerationStatus {
@@ -366,4 +449,17 @@ enum CardType {
   VOCABULARY
   SENTENCE
   REVIEW
+}
+
+enum LevelArea {
+  VOCABULARY
+  CONVERSATION
+  READING
+  WRITING
+}
+
+enum LevelChangeReason {
+  ALL_PASSED
+  AREA_FAILED
+  INITIAL
 }
