@@ -35,6 +35,8 @@ model User {
   readingAttempts   ReadingAttempt[]
   speakingEvaluations SpeakingEvaluation[]
   writingSubmissions  WritingSubmission[]
+  learningNodes     LearningNode[]
+  learningEdges     LearningEdge[]
 
   @@index([email])
 }
@@ -155,6 +157,7 @@ model DailyLesson {
   readingAttempts   ReadingAttempt[]
   speakingEvaluations SpeakingEvaluation[]
   writingSubmissions  WritingSubmission[]
+  learningNode      LearningNode? @relation("NodeLesson")
 
   @@unique([userId, calendarDate])
   @@unique([curriculumId, studyDay])
@@ -392,6 +395,39 @@ model WritingSubmission {
   @@unique([userId, dailyLessonId])
 }
 
+// ─── Node-Graph Learning System (V2) ─────────────────────────────────────────
+
+model LearningNode {
+  id            String      @id @default(cuid())
+  userId        String
+  type          NodeType
+  stage         Int         @default(1)
+  difficulty    Float       @default(1.0)
+  status        NodeStatus  @default(UNLOCKED)
+  score         Float?
+  reviewItems   Json        @default("[]")
+  dailyLessonId String?     @unique
+  completedAt   DateTime?
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyLesson   DailyLesson? @relation("NodeLesson", fields: [dailyLessonId], references: [id])
+  outEdges      LearningEdge[] @relation("EdgeFrom")
+  inEdges       LearningEdge[] @relation("EdgeTo")
+  @@index([userId, type, stage])
+}
+
+model LearningEdge {
+  id         String       @id @default(cuid())
+  userId     String
+  fromNodeId String
+  toNodeId   String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromNode   LearningNode @relation("EdgeFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode     LearningNode @relation("EdgeTo",   fields: [toNodeId],   references: [id], onDelete: Cascade)
+  @@unique([fromNodeId, toNodeId])
+  @@index([userId])
+}
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
 enum GenerationStatus {
@@ -463,6 +499,21 @@ enum LevelChangeReason {
   AREA_FAILED
   INITIAL
   PARTIAL_PASS
+}
+
+enum NodeType {
+  VOCAB
+  CONVERSATION
+  READING
+  WRITING
+  REVIEW
+}
+
+enum NodeStatus {
+  LOCKED
+  UNLOCKED
+  IN_PROGRESS
+  COMPLETED
 }
 
 // ─── Open Content Bank (DB-first content, reduces AI generation cost) ─────────
