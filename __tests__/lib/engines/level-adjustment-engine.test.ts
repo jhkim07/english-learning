@@ -9,6 +9,7 @@ jest.mock("@/lib/db", () => ({
     },
     levelProfile: {
       findUnique: jest.fn(),
+      upsert: jest.fn(),
       update: jest.fn(),
     },
     flashcardAttempt: {
@@ -39,6 +40,7 @@ jest.mock("@prisma/client", () => ({
     ALL_PASSED: "ALL_PASSED",
     AREA_FAILED: "AREA_FAILED",
     INITIAL: "INITIAL",
+    PARTIAL_PASS: "PARTIAL_PASS",
   },
 }));
 
@@ -81,8 +83,8 @@ describe("adjustLevels", () => {
     jest.clearAllMocks();
     // Default: no existing history records
     (prisma.levelHistory.findMany as jest.Mock).mockResolvedValue([]);
-    // Default profile
-    (prisma.levelProfile.findUnique as jest.Mock).mockResolvedValue(DEFAULT_LEVEL_PROFILE);
+    // Default profile (upsert is used now — creates profile if missing instead of throwing)
+    (prisma.levelProfile.upsert as jest.Mock).mockResolvedValue(DEFAULT_LEVEL_PROFILE);
     // Default: $transaction resolves
     (prisma.$transaction as jest.Mock).mockResolvedValue([]);
   });
@@ -209,9 +211,63 @@ describe("adjustLevels", () => {
     expect(prisma.flashcardAttempt.findMany as jest.Mock).not.toHaveBeenCalled();
   });
 
+  // T5b: PARTIAL_PASS reason — one area fails, passing areas get PARTIAL_PASS not ALL_PASSED
+  it("T5b: one area fails → passing areas get PARTIAL_PASS reason, failing area gets AREA_FAILED", async () => {
+    // Vocab fails (50%), others pass
+    (prisma.flashcardAttempt.findMany as jest.Mock).mockResolvedValue([
+      makeFlashcard(0, "card-bad"), makeFlashcard(2, "card-good"),
+    ]);
+    (prisma.readingAttempt.findMany as jest.Mock).mockResolvedValue([
+      makeReadingAttempt(true), makeReadingAttempt(true),
+    ]);
+    (prisma.speakingEvaluation.findMany as jest.Mock).mockResolvedValue([makeSpeakingEval(0.8)]);
+    (prisma.writingSubmission.findMany as jest.Mock).mockResolvedValue([makeWritingSubmission(0.9)]);
+
+    await adjustLevels(MOCK_USER_ID, MOCK_LESSON_ID);
+
+    // Verify transaction called with correct reasons
+    expect(prisma.$transaction as jest.Mock).toHaveBeenCalled();
+    const txArgs = (prisma.$transaction as jest.Mock).mock.calls[0][0];
+    // txArgs[0] is levelProfile.update; txArgs[1..4] are levelHistory.create calls
+    // Check that levelHistory.create was called for READING with PARTIAL_PASS
+    expect(prisma.levelHistory.create as jest.Mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ area: "VOCABULARY", reason: "AREA_FAILED" }),
+      })
+    );
+    expect(prisma.levelHistory.create as jest.Mock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ area: "READING", reason: "PARTIAL_PASS" }),
+      })
+    );
+  });
+
+  // T5c: Idempotency with PARTIAL_PASS — allPassed reconstructed correctly
+  it("T5c: idempotency with PARTIAL_PASS records → allPassed=false", async () => {
+    const existingRecords = [
+      { area: "VOCABULARY", fromLevel: 2.0, toLevel: 1.9, reason: "AREA_FAILED", dailyLessonId: MOCK_LESSON_ID },
+      { area: "READING", fromLevel: 2.0, toLevel: 2.0, reason: "PARTIAL_PASS", dailyLessonId: MOCK_LESSON_ID },
+      { area: "CONVERSATION", fromLevel: 2.0, toLevel: 2.0, reason: "PARTIAL_PASS", dailyLessonId: MOCK_LESSON_ID },
+      { area: "WRITING", fromLevel: 2.0, toLevel: 2.0, reason: "PARTIAL_PASS", dailyLessonId: MOCK_LESSON_ID },
+    ];
+    (prisma.levelHistory.findMany as jest.Mock).mockResolvedValue(existingRecords);
+
+    const result = await adjustLevels(MOCK_USER_ID, MOCK_LESSON_ID);
+
+    // allPassed should be false (no ALL_PASSED records)
+    expect(result.allPassed).toBe(false);
+    // passed = true for non-AREA_FAILED
+    const vocabChange = result.changes.find(c => c.area === "VOCABULARY");
+    expect(vocabChange!.passed).toBe(false);
+    const readingChange = result.changes.find(c => c.area === "READING");
+    expect(readingChange!.passed).toBe(true);
+    // Should NOT call $transaction
+    expect(prisma.$transaction as jest.Mock).not.toHaveBeenCalled();
+  });
+
   // T6: Boundary: level 1.0 → fail → stays at 1.0 (min clamp)
   it("T6: level 1.0 fails → stays at 1.0 (min clamp)", async () => {
-    (prisma.levelProfile.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.levelProfile.upsert as jest.Mock).mockResolvedValue({
       ...DEFAULT_LEVEL_PROFILE,
       vocabulary: 1.0,
       conversation: 1.0,
@@ -240,7 +296,7 @@ describe("adjustLevels", () => {
   // T7: pendingReviewItems ordering: failedItems appear before existing items, max 20
   it("T7: pending review items — failed vocab IDs prepend existing items, capped at 20", async () => {
     const existingItems = Array.from({ length: 18 }, (_, i) => `existing-item-${i}`);
-    (prisma.levelProfile.findUnique as jest.Mock).mockResolvedValue({
+    (prisma.levelProfile.upsert as jest.Mock).mockResolvedValue({
       ...DEFAULT_LEVEL_PROFILE,
       pendingReviewItems: existingItems,
     });

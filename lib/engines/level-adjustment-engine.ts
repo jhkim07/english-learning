@@ -29,10 +29,10 @@ export async function adjustLevels(
         area: r.area,
         from: r.fromLevel,
         to: r.toLevel,
-        passed: r.reason !== "AREA_FAILED",
+        passed: r.reason !== LevelChangeReason.AREA_FAILED,
         accuracy: r.toLevel >= r.fromLevel ? 1 : 0,
       })),
-      allPassed: existingRecords.every((r) => r.reason !== "AREA_FAILED"),
+      allPassed: existingRecords.every((r) => r.reason === LevelChangeReason.ALL_PASSED),
       failedItems: [], // already stored in pendingReviewItems
     };
   }
@@ -43,12 +43,8 @@ export async function adjustLevels(
     prisma.readingAttempt.findMany({ where: { userId, dailyLessonId: lessonId } }),
     prisma.speakingEvaluation.findMany({ where: { userId, dailyLessonId: lessonId } }),
     prisma.writingSubmission.findMany({ where: { userId, dailyLessonId: lessonId } }),
-    prisma.levelProfile.findUnique({ where: { userId } }),
+    prisma.levelProfile.upsert({ where: { userId }, create: { userId }, update: {} }),
   ]);
-
-  if (!levelProfile) {
-    throw new Error(`LevelProfile not found for user ${userId}`);
-  }
 
   // Compute accuracy per area
   const areas = {
@@ -132,7 +128,11 @@ export async function adjustLevels(
           area: c.area as LevelArea,
           fromLevel: c.from,
           toLevel: c.to,
-          reason: c.passed ? LevelChangeReason.ALL_PASSED : LevelChangeReason.AREA_FAILED,
+          reason: !c.passed
+              ? LevelChangeReason.AREA_FAILED
+              : allPassed
+                ? LevelChangeReason.ALL_PASSED
+                : LevelChangeReason.PARTIAL_PASS,
           dailyLessonId: lessonId,
         },
       })

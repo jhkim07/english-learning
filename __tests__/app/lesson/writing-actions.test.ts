@@ -9,7 +9,7 @@ jest.mock("@/auth", () => ({
 jest.mock("@/lib/db", () => ({
   prisma: {
     writingSubmission: {
-      create: jest.fn().mockResolvedValue({}),
+      upsert: jest.fn().mockResolvedValue({}),
     },
   },
 }));
@@ -39,19 +39,23 @@ describe("submitWriting — writingSubmission tracking", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Restore mocked return values cleared by clearAllMocks
-    (mockPrisma.writingSubmission.create as jest.Mock).mockResolvedValue({});
+    (mockPrisma.writingSubmission.upsert as jest.Mock).mockResolvedValue({});
     const { recordError } = jest.requireMock("@/lib/errors/record-error");
     recordError.mockResolvedValue(undefined);
   });
 
-  it("calls writingSubmission.create with correct userId and lessonId", async () => {
+  it("calls writingSubmission.upsert with correct userId and lessonId", async () => {
     await submitWriting(BASE_INPUT);
 
-    expect(mockPrisma.writingSubmission.create).toHaveBeenCalledWith(
+    expect(mockPrisma.writingSubmission.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        where: { userId_dailyLessonId: { userId: "user-1", dailyLessonId: "lesson-1" } },
+        create: expect.objectContaining({
           userId: "user-1",
           dailyLessonId: "lesson-1",
+        }),
+        update: expect.objectContaining({
+          evaluationScore: expect.any(Number),
         }),
       })
     );
@@ -60,9 +64,9 @@ describe("submitWriting — writingSubmission tracking", () => {
   it("normalizes grammarScore to 0.0–1.0 range (divides by 100)", async () => {
     await submitWriting(BASE_INPUT);
 
-    const calls = (mockPrisma.writingSubmission.create as jest.Mock).mock.calls;
+    const calls = (mockPrisma.writingSubmission.upsert as jest.Mock).mock.calls;
     expect(calls.length).toBeGreaterThan(0);
-    const { evaluationScore } = calls[0][0].data;
+    const { evaluationScore } = calls[0][0].create;
     expect(typeof evaluationScore).toBe("number");
     expect(evaluationScore).toBeGreaterThanOrEqual(0);
     expect(evaluationScore).toBeLessThanOrEqual(1);
@@ -71,17 +75,18 @@ describe("submitWriting — writingSubmission tracking", () => {
   it("uses the correct lessonId from input", async () => {
     await submitWriting({ ...BASE_INPUT, lessonId: "lesson-XYZ" });
 
-    expect(mockPrisma.writingSubmission.create).toHaveBeenCalledWith(
+    expect(mockPrisma.writingSubmission.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        where: { userId_dailyLessonId: { userId: "user-1", dailyLessonId: "lesson-XYZ" } },
+        create: expect.objectContaining({
           dailyLessonId: "lesson-XYZ",
         }),
       })
     );
   });
 
-  it("session continues if writingSubmission.create rejects (fire-and-forget)", async () => {
-    (mockPrisma.writingSubmission.create as jest.Mock).mockRejectedValueOnce(
+  it("session continues if writingSubmission.upsert rejects (fire-and-forget)", async () => {
+    (mockPrisma.writingSubmission.upsert as jest.Mock).mockRejectedValueOnce(
       new Error("DB write failed")
     );
 
@@ -90,7 +95,7 @@ describe("submitWriting — writingSubmission tracking", () => {
   });
 
   it("returns the full WritingEvaluation result even when DB fails", async () => {
-    (mockPrisma.writingSubmission.create as jest.Mock).mockRejectedValueOnce(
+    (mockPrisma.writingSubmission.upsert as jest.Mock).mockRejectedValueOnce(
       new Error("DB write failed")
     );
 
@@ -107,8 +112,8 @@ describe("submitWriting — writingSubmission tracking", () => {
     // So evaluationScore should be 8 / 100 = 0.08
     await submitWriting(BASE_INPUT);
 
-    const calls = (mockPrisma.writingSubmission.create as jest.Mock).mock.calls;
-    const { evaluationScore } = calls[0][0].data;
+    const calls = (mockPrisma.writingSubmission.upsert as jest.Mock).mock.calls;
+    const { evaluationScore } = calls[0][0].create;
     // grammarScore from EvaluationAgent mock is 8 → normalized = 0.08
     expect(evaluationScore).toBeCloseTo(0.08);
   });

@@ -21,6 +21,24 @@ jest.mock("@/lib/engines/level-adjustment-engine", () => ({
   adjustLevels: (...args: unknown[]) => mockAdjustLevels(...args),
 }));
 
+// Provide a real-enough PrismaClientKnownRequestError class for instanceof checks
+class MockPrismaClientKnownRequestError extends Error {
+  code: string;
+  clientVersion: string;
+  constructor(message: string, { code, clientVersion }: { code: string; clientVersion: string }) {
+    super(message);
+    this.code = code;
+    this.clientVersion = clientVersion;
+    this.name = "PrismaClientKnownRequestError";
+  }
+}
+
+jest.mock("@prisma/client", () => ({
+  Prisma: {
+    PrismaClientKnownRequestError: MockPrismaClientKnownRequestError,
+  },
+}));
+
 import { POST } from "@/app/api/session/[lessonId]/complete/route";
 import { NextResponse } from "next/server";
 
@@ -128,8 +146,10 @@ describe("POST /api/session/[lessonId]/complete (T16)", () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
     mockFindFirst.mockResolvedValue({ id: "lesson-1", userId: "user-1" });
 
-    const prismaError = new Error("Unique constraint failed");
-    (prismaError as unknown as { code: string }).code = "P2002";
+    const prismaError = new MockPrismaClientKnownRequestError("Unique constraint failed", {
+      code: "P2002",
+      clientVersion: "5.0.0",
+    });
     mockAdjustLevels.mockRejectedValue(prismaError);
 
     const { req, params } = makeRequest("lesson-1");

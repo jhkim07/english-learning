@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db"
 import { adjustLevels } from "@/lib/engines/level-adjustment-engine"
@@ -25,7 +26,7 @@ export async function POST(
     return NextResponse.json(result)
   } catch (err: unknown) {
     // P2002 = unique constraint violation (race condition: concurrent calls) (T-race)
-    if ((err as { code?: string })?.code === "P2002") {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
       return NextResponse.json({ error: "Already processed" }, { status: 409 })
     }
     throw err

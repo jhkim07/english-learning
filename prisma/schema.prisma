@@ -389,7 +389,7 @@ model WritingSubmission {
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   dailyLesson DailyLesson @relation(fields: [dailyLessonId], references: [id])
 
-  @@index([userId, dailyLessonId])
+  @@unique([userId, dailyLessonId])
 }
 
 // ─── Enums ────────────────────────────────────────────────────────────────────
@@ -462,4 +462,66 @@ enum LevelChangeReason {
   ALL_PASSED
   AREA_FAILED
   INITIAL
+  PARTIAL_PASS
+}
+
+// ─── Open Content Bank (DB-first content, reduces AI generation cost) ─────────
+
+model WordBank {
+  id            Int      @id @default(autoincrement())
+  word          String   @unique
+  frequencyRank Int?     // NGSL rank (1 = most frequent)
+  cefrLevel     String?  // "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
+  partOfSpeech  String?
+  definition    String?
+  koreanMeaning String?  // from NIKL
+  source        String   @default("ngsl")
+  createdAt     DateTime @default(now())
+
+  sentences SentenceBank[]
+
+  @@map("word_bank")
+}
+
+model SentenceBank {
+  id         Int      @id @default(autoincrement())
+  english    String
+  korean     String
+  targetWord String?
+  wordId     Int?
+  word       WordBank? @relation(fields: [wordId], references: [id])
+  source     String    @default("tatoeba")
+  createdAt  DateTime  @default(now())
+
+  @@map("sentence_bank")
+}
+
+model ReadingBank {
+  id          Int      @id @default(autoincrement())
+  title       String
+  passage     String   @db.Text
+  wordCount   Int
+  cefrLevel   String   // "B1" | "B2"
+  topic       String?
+  source      String   // "gutenberg" | "graded_readers"
+  sourceId    String?
+  usedByCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("reading_bank")
+}
+
+model ConversationBank {
+  id          Int      @id @default(autoincrement())
+  topic       String   // "workplace" | "travel" | "health" | "shopping" | "social" | ...
+  scenario    String?  // brief situation description, used as AI system prompt seed
+  turns       Json     // [{speaker:"A"|"B", text:string}]
+  turnCount   Int
+  cefrLevel   String   @default("B1")  // "B1" | "B2"
+  source      String   // "dailydialog" | "voa"
+  sourceId    String?
+  usedByCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@map("conversation_bank")
 }

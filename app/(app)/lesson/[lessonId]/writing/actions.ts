@@ -35,8 +35,11 @@ export async function submitWriting(
   });
 
   // Fire-and-forget: track writing submission score for adaptive level adjustment
-  prisma.writingSubmission.create({
-    data: {
+  // Upsert ensures revisions update the existing row rather than creating duplicates
+  prisma.writingSubmission.upsert({
+    where: { userId_dailyLessonId: { userId, dailyLessonId: input.lessonId } },
+    update: { evaluationScore: result.grammarScore / 100 },
+    create: {
       userId,
       dailyLessonId: input.lessonId,
       evaluationScore: result.grammarScore / 100,

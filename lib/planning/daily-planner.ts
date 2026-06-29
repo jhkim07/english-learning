@@ -78,10 +78,14 @@ export class DailyPlanner {
       vocabMeta = { generationSeed: aiResult.generationSeed, modelVersion: aiResult.modelVersion, promptVersion: aiResult.promptVersion };
     }
 
-    const vocabValidation = await this.validator.validate("vocabulary", vocabCards!, ctx.userLevel);
+    if (!vocabCards) {
+      throw new Error("Vocab generation failed: no content from DB or AI");
+    }
+
+    const vocabValidation = await this.validator.validate("vocabulary", vocabCards, ctx.userLevel);
 
     const vocabArtifacts = await Promise.all(
-      vocabCards!.map((card) =>
+      vocabCards.map((card) =>
         prisma.aIArtifact.create({
           data: {
             userId: ctx.userId,
@@ -105,10 +109,10 @@ export class DailyPlanner {
     await this.updateStatus(dailyLessonId, { vocabStatus: "READY" });
 
     // ── 2. Images (one per vocab card, pre-generated) ─────────────────────────
-    const vocabWords = vocabCards!.map((c) => c.word);
+    const vocabWords = vocabCards.map((c) => c.word);
 
     const imageArtifacts = await Promise.all(
-      vocabCards!.map((card, idx) =>
+      vocabCards.map((card, idx) =>
         this.imageGen.generate({
           imagePrompt: card.imagePrompt,
           word: card.word,
