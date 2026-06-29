@@ -144,12 +144,13 @@ export async function getOrCreateLesson(
   if (node.dailyLessonId) return node.dailyLessonId;
 
   // 3. Create a new DailyLesson
+  const existingCount = await prisma.dailyLesson.count({ where: { userId } });
   const today = new Date();
   const lesson = await prisma.dailyLesson.create({
     data: {
       userId,
       calendarDate: today,
-      studyDay: 1,
+      studyDay: existingCount + 1,
       generationStatus: "PENDING",
     },
   });

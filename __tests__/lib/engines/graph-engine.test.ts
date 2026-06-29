@@ -20,6 +20,7 @@ jest.mock("@/lib/db", () => ({
     },
     dailyLesson: {
       create: jest.fn(),
+      count: jest.fn(),
     },
   },
 }));
@@ -355,6 +356,7 @@ describe("getOrCreateLesson — no dailyLessonId", () => {
     const newLesson = { id: "lesson-new-id" };
 
     (prisma.learningNode.findFirst as jest.Mock).mockResolvedValue(nodeWithoutLesson);
+    (prisma.dailyLesson.count as jest.Mock).mockResolvedValue(2);
     (prisma.dailyLesson.create as jest.Mock).mockResolvedValue(newLesson);
     (prisma.learningNode.update as jest.Mock).mockResolvedValue({
       ...nodeWithoutLesson,
@@ -364,7 +366,10 @@ describe("getOrCreateLesson — no dailyLessonId", () => {
     const result = await getOrCreateLesson(MOCK_USER_ID, "node-1");
 
     expect(result).toBe("lesson-new-id");
+    expect(prisma.dailyLesson.count).toHaveBeenCalledWith({ where: { userId: MOCK_USER_ID } });
     expect(prisma.dailyLesson.create).toHaveBeenCalledTimes(1);
+    const createCall = (prisma.dailyLesson.create as jest.Mock).mock.calls[0][0];
+    expect(createCall.data.studyDay).toBe(3);
     expect(prisma.learningNode.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "node-1" },
