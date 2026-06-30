@@ -12,7 +12,10 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "echo 'Task 9: ts-node prisma/seed.ts'",
     "seed": "npx prisma db seed",
-    "generate:today": "tsx scripts/generate-today.ts"
+    "generate:today": "tsx scripts/generate-today.ts",
+    "generate:direct": "tsx --env-file=.env.local scripts/generate-direct.ts",
+    "generate:vocab": "tsx --env-file=.env.local scripts/generate-direct.ts --generator vocab",
+    "generate:reading": "tsx --env-file=.env.local scripts/generate-direct.ts --generator reading"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -23,6 +26,7 @@
     "@aws-sdk/client-s3": "^3.1075.0",
     "@aws-sdk/s3-request-presigner": "^3.1075.0",
     "@base-ui/react": "^1.6.0",
+    "@dagrejs/dagre": "^3.0.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.17",
     "@radix-ui/react-label": "^2.1.10",
@@ -30,6 +34,7 @@
     "@radix-ui/react-separator": "^1.1.10",
     "@radix-ui/react-slot": "^1.3.0",
     "@types/node-cron": "^3.0.11",
+    "@xyflow/react": "^12.11.1",
     "bullmq": "^5.79.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -49,6 +54,7 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
+    "@types/dagre": "^0.7.54",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.43",
     "@types/react": "^18",
