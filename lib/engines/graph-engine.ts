@@ -1,14 +1,9 @@
-import { LearningNode, NodeStatus, NodeType } from "@prisma/client";
+import { LearningNode } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
 const INITIAL_DIFFICULTY = 1.0;
 const INITIAL_STAGE = 1;
-const CORE_NODE_TYPES: NodeType[] = [
-  NodeType.VOCAB,
-  NodeType.CONVERSATION,
-  NodeType.READING,
-  NodeType.WRITING,
-];
+const CORE_NODE_TYPES = ["VOCAB", "CONVERSATION", "READING", "WRITING"] as const;
 
 /**
  * Creates the initial 4-node learning graph for a new user.
@@ -21,7 +16,7 @@ export async function initializeUserGraph(userId: string): Promise<void> {
       type,
       stage: INITIAL_STAGE,
       difficulty: INITIAL_DIFFICULTY,
-      status: NodeStatus.UNLOCKED,
+      status: "UNLOCKED",
     })),
   });
 }
@@ -39,12 +34,12 @@ export async function onNodeComplete(
   // 1. Find the node
   const node = await prisma.learningNode.findFirst({ where: { id: nodeId, userId } });
   if (!node) throw new Error("Node not found");
-  if (node.status === NodeStatus.COMPLETED) throw new Error("Already completed");
+  if (node.status === "COMPLETED") throw new Error("Already completed");
 
   // 2. Mark node as COMPLETED
   await prisma.learningNode.update({
     where: { id: nodeId },
-    data: { status: NodeStatus.COMPLETED, score, completedAt: new Date() },
+    data: { status: "COMPLETED", score, completedAt: new Date() },
   });
 
   // 3. Optionally create a REVIEW node
@@ -53,7 +48,7 @@ export async function onNodeComplete(
   if (score < 1.0) {
     // 3a. Collect reviewItems from previous REVIEW nodes for this user
     const previousReviewNodes = await prisma.learningNode.findMany({
-      where: { userId, type: NodeType.REVIEW },
+      where: { userId, type: "REVIEW" },
     });
 
     // 3b. Merge previous hard items (excluding current failedItems), max 10
@@ -76,10 +71,10 @@ export async function onNodeComplete(
     reviewNode = await prisma.learningNode.create({
       data: {
         userId,
-        type: NodeType.REVIEW,
+        type: "REVIEW",
         stage: node.stage,
         difficulty: node.difficulty,
-        status: NodeStatus.UNLOCKED,
+        status: "UNLOCKED",
         reviewItems: mergedItems,
       },
     });
@@ -92,7 +87,7 @@ export async function onNodeComplete(
     // 3f. Edges: reviewNode → unlocked nodes of the other 3 core types
     const otherTypes = CORE_NODE_TYPES.filter((t) => t !== node.type);
     const otherUnlockedNodes = await prisma.learningNode.findMany({
-      where: { userId, type: { in: otherTypes }, status: NodeStatus.UNLOCKED },
+      where: { userId, type: { in: otherTypes }, status: "UNLOCKED" },
     });
 
     for (const otherNode of otherUnlockedNodes) {
@@ -115,7 +110,7 @@ export async function onNodeComplete(
       type: node.type,
       stage: node.stage + 1,
       difficulty: rawDifficulty,
-      status: reviewNode ? NodeStatus.LOCKED : NodeStatus.UNLOCKED,
+      status: reviewNode ? "LOCKED" : "UNLOCKED",
     },
   });
 
