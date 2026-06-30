@@ -37,7 +37,7 @@ export default function GraphClient({ initialNodes, initialEdges }: GraphClientP
   }, [router, loadingNodeId])
 
   return (
-    <div style={{ width: "100%", height: "calc(100vh - 57px)" }}>
+    <div style={{ width: "100%", height: "calc(100vh - 57px)", position: "relative" }}>
       {loadingNodeId && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/60">
           <span className="text-sm text-muted-foreground">레슨을 불러오는 중...</span>
