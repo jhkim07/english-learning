@@ -36,6 +36,41 @@ export async function onNodeComplete(
   if (!node) throw new Error("Node not found");
   if (node.status === "COMPLETED") throw new Error("Already completed");
 
+  // 1b. Guard: REVIEW node completion — unlock the next-stage node, no new chain
+  if (node.type === "REVIEW") {
+    await prisma.learningNode.update({
+      where: { id: nodeId },
+      data: { status: "COMPLETED", score, completedAt: new Date() },
+    });
+
+    // Find the content node that spawned this review (single inEdge)
+    const sourceEdge = await prisma.learningEdge.findFirst({
+      where: { userId, toNodeId: nodeId },
+    });
+
+    let unlockedNextNode: LearningNode | null = null;
+    if (sourceEdge) {
+      // Find the LOCKED next-stage node from the source content node
+      const candidateEdges = await prisma.learningEdge.findMany({
+        where: { userId, fromNodeId: sourceEdge.fromNodeId },
+        include: { toNode: true },
+      });
+      const lockedNode = candidateEdges
+        .map((e) => (e as { toNode: LearningNode }).toNode)
+        .find((n) => n.status === "LOCKED");
+
+      if (lockedNode) {
+        unlockedNextNode = await prisma.learningNode.update({
+          where: { id: lockedNode.id },
+          data: { status: "UNLOCKED" },
+        });
+      }
+    }
+
+    // If no locked node found, return the review node itself as a safe fallback
+    return { reviewNode: null, nextNode: unlockedNextNode ?? node };
+  }
+
   // 2. Mark node as COMPLETED
   await prisma.learningNode.update({
     where: { id: nodeId },

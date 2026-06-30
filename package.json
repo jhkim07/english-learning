@@ -23,7 +23,6 @@
     "@aws-sdk/client-s3": "^3.1075.0",
     "@aws-sdk/s3-request-presigner": "^3.1075.0",
     "@base-ui/react": "^1.6.0",
-    "@dagrejs/dagre": "^3.0.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-dialog": "^1.1.17",
     "@radix-ui/react-label": "^2.1.10",
@@ -51,7 +50,6 @@
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/dagre": "^0.7.54",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.19.43",
     "@types/react": "^18",

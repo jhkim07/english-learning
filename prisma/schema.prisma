@@ -159,7 +159,6 @@ model DailyLesson {
   writingSubmissions  WritingSubmission[]
   learningNode      LearningNode? @relation("NodeLesson")
 
-  @@unique([userId, calendarDate])
   @@unique([curriculumId, studyDay])
   @@index([userId, studyDay])
   @@index([userId, calendarDate])

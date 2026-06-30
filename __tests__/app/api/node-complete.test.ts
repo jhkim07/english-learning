@@ -90,6 +90,39 @@ describe("POST /api/nodes/[nodeId]/complete", () => {
     expect(body.error).toBe("Unauthorized");
   });
 
+  it("returns 400 when score is not a number", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+
+    const { req, params } = makeRequest("node-1", { score: "high", failedItems: [] });
+    const response = await POST(req, { params });
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Invalid score");
+  });
+
+  it("returns 400 when score is out of range (> 1)", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+
+    const { req, params } = makeRequest("node-1", { score: 1.5, failedItems: [] });
+    const response = await POST(req, { params });
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Invalid score");
+  });
+
+  it("returns 400 when failedItems is not an array", async () => {
+    mockAuth.mockResolvedValue({ user: { id: "user-1" } });
+
+    const { req, params } = makeRequest("node-1", { score: 0.8, failedItems: "item-1" });
+    const response = await POST(req, { params });
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.error).toBe("Invalid failedItems");
+  });
+
   it("returns 404 when node not found or belongs to another user (IDOR protection)", async () => {
     mockAuth.mockResolvedValue({ user: { id: "user-1" } });
     mockFindFirst.mockResolvedValue(null);

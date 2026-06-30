@@ -13,18 +13,23 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  // 2. 노드 소유권 확인 (IDOR 방어)
+  // 2. 요청 파싱 및 입력 유효성 검사
+  const body = await req.json()
+  const { score, failedItems } = body
+  if (typeof score !== "number" || score < 0 || score > 1) {
+    return NextResponse.json({ error: "Invalid score" }, { status: 400 })
+  }
+  if (!Array.isArray(failedItems)) {
+    return NextResponse.json({ error: "Invalid failedItems" }, { status: 400 })
+  }
+
+  // 3. 노드 소유권 확인 (IDOR 방어)
   const node = await prisma.learningNode.findFirst({
     where: { id: params.nodeId, userId: session.user.id }
   })
   if (!node) {
     return NextResponse.json({ error: "Not found" }, { status: 404 })
   }
-
-  // 3. 요청 파싱
-  const body = await req.json()
-  const score: number = body.score
-  const failedItems: string[] = body.failedItems ?? []
 
   // 4. 이미 완료된 노드: 409 반환 (idempotent — 에러로 throw하지 않음)
   if (node.status === "COMPLETED") {

@@ -17,6 +17,8 @@ jest.mock("@/lib/db", () => ({
     },
     learningEdge: {
       create: jest.fn(),
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
     },
     dailyLesson: {
       create: jest.fn(),
@@ -340,6 +342,51 @@ describe("getOrCreateLesson — dailyLessonId exists", () => {
     expect(result).toBe("lesson-existing-id");
     expect(prisma.dailyLesson.create).not.toHaveBeenCalled();
     expect(prisma.learningNode.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("onNodeComplete — REVIEW node completion", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("unlocks the LOCKED next-stage node, no new REVIEW created", async () => {
+    const reviewNode = makeNode({
+      id: "review-node-id",
+      type: NodeType.REVIEW,
+      status: NodeStatus.UNLOCKED,
+    });
+    const lockedNextNode = makeNode({
+      id: "next-id",
+      status: NodeStatus.LOCKED,
+    });
+    const unlockedNextNode = { ...lockedNextNode, status: NodeStatus.UNLOCKED };
+
+    // findFirst: the REVIEW node itself
+    (prisma.learningNode.findFirst as jest.Mock).mockResolvedValue(reviewNode);
+    // update: mark REVIEW as COMPLETED
+    (prisma.learningNode.update as jest.Mock)
+      .mockResolvedValueOnce({ ...reviewNode, status: NodeStatus.COMPLETED })
+      // update: unlock the LOCKED next-stage node
+      .mockResolvedValueOnce(unlockedNextNode);
+    // learningEdge.findFirst: returns the inEdge from content node
+    (prisma.learningEdge.findFirst as jest.Mock).mockResolvedValue({
+      id: "edge-content-review",
+      fromNodeId: "content-node-id",
+      toNodeId: "review-node-id",
+    });
+    // learningEdge.findMany: returns candidateEdges from content node
+    (prisma.learningEdge.findMany as jest.Mock).mockResolvedValue([
+      { id: "edge-content-next", fromNodeId: "content-node-id", toNodeId: "next-id", toNode: lockedNextNode },
+    ]);
+
+    const result = await onNodeComplete(MOCK_USER_ID, "review-node-id", 0.7, []);
+
+    expect(result.reviewNode).toBeNull();
+    expect(result.nextNode.id).toBe("next-id");
+    expect(result.nextNode.status).toBe(NodeStatus.UNLOCKED);
+    // No new node created — no infinite REVIEW chain
+    expect(prisma.learningNode.create).not.toHaveBeenCalled();
   });
 });
 
