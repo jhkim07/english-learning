@@ -12,10 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "echo 'Task 9: ts-node prisma/seed.ts'",
     "seed": "npx prisma db seed",
-    "generate:today": "tsx scripts/generate-today.ts",
-    "generate:direct": "tsx --env-file=.env.local scripts/generate-direct.ts",
-    "generate:vocab": "tsx --env-file=.env.local scripts/generate-direct.ts --generator vocab",
-    "generate:reading": "tsx --env-file=.env.local scripts/generate-direct.ts --generator reading"
+    "generate:today": "tsx scripts/generate-today.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
